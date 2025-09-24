@@ -4,6 +4,7 @@ from __future__ import annotations
 import csv
 import math
 import sys
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, List, Optional
@@ -40,20 +41,63 @@ class ImageTextDataset(Dataset):
         self.entries = self._load_metadata()
 
     def _load_metadata(self) -> List[dict]:
+        suffix = self.metadata_path.suffix.lower()
+        if suffix == ".jsonl":
+            rows = self._load_jsonl_metadata()
+        else:
+            rows = self._load_csv_metadata()
+        if not rows:
+            raise ValueError(
+                f"No usable rows found in {self.metadata_path}."
+            )
+        return rows
+
+    def _load_csv_metadata(self) -> List[dict]:
         rows: List[dict] = []
         with self.metadata_path.open("r", newline="", encoding="utf-8") as handle:
             reader = csv.DictReader(handle)
             for row in reader:
-                image_path = row.get("image_path")
-                text = row.get("text")
+                image_path = self._extract_image_path(row)
+                text = self._extract_text(row)
                 if not image_path or not text:
                     continue
                 rows.append({"image_path": image_path, "text": text})
-        if not rows:
-            raise ValueError(
-                f"No usable rows found in {self.metadata_path}. Expected 'image_path' and 'text' columns."
-            )
         return rows
+
+    def _load_jsonl_metadata(self) -> List[dict]:
+        rows: List[dict] = []
+        with self.metadata_path.open("r", encoding="utf-8") as handle:
+            for line in handle:
+                try:
+                    record = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                image_path = self._extract_image_path(record)
+                text = self._extract_text(record)
+                if not image_path or not text:
+                    continue
+                rows.append({"image_path": image_path, "text": text})
+        return rows
+
+    def _extract_image_path(self, record: dict) -> Optional[str]:
+        for key in ("image_path", "path", "file_path", "filepath"):
+            value = record.get(key)
+            if not value:
+                continue
+            path = str(value).strip().replace("\\", "/")
+            if path.startswith("./"):
+                path = path[2:]
+            if path.startswith("images/"):
+                path = path[len("images/") :]
+            return path
+        return None
+
+    def _extract_text(self, record: dict) -> Optional[str]:
+        for key in ("text", "caption", "prompt", "title"):
+            value = record.get(key)
+            if value:
+                return str(value).strip()
+        return None
 
     def __len__(self) -> int:  # pragma: no cover - trivial container
         return len(self.entries)

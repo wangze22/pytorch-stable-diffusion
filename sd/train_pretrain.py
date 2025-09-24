@@ -5,8 +5,9 @@ from pathlib import Path
 
 from train_model import TrainConfig, train_text_to_image
 
-DATA_ROOT = Path("/datasets/laion_aesthetic6")
-METADATA_PATH = DATA_ROOT / "metadata/laion-aesthetic-6.5plus.csv"
+REPO_ROOT = Path(__file__).resolve().parent
+DATA_ROOT = REPO_ROOT / "laion_aesthetic6"
+METADATA_PATH = DATA_ROOT / "metadata.jsonl"
 IMAGES_ROOT = DATA_ROOT / "images"
 PRETRAINED_WEIGHTS = Path("../data/v1-5-pruned-emaonly.ckpt")
 TOKENIZER_NAME = "openai/clip-vit-large-patch14"
