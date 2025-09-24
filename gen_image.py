@@ -17,7 +17,7 @@ if str(SD_DIR) not in sys.path:
 
 from pipeline import generate  # type: ignore  # pylint: disable=wrong-import-position
 
-WEIGHTS_PATH = Path("/path/to/v1-5-pruned-emaonly.ckpt")
+WEIGHTS_PATH = Path("./data/v1-5-pruned-emaonly.ckpt")
 TOKENIZER_NAME = "openai/clip-vit-large-patch14"
 OUTPUT_DIR = Path("generated_samples")
 
